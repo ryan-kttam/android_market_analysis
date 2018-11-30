@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 # reading the data
 data = pd.read_csv('C:/Github/android_market_analysis/googleplaystore.csv')
 # check the first two rows of the data and make sure we imported correctly
-data.head(2)
+data.head(5)
 len(data)
 list(data)
 
@@ -38,6 +38,7 @@ data.loc[mb_loc ,'Size'] = pd.to_numeric([mb[:-1] for mb in data.loc[mb_loc ,'Si
 def fotmat_install(d):
     return d.replace(',','').replace('+','')
 data.Installs = pd.to_numeric([fotmat_install(i) for i in data.Installs])
+data['Reviews'] = pd.to_numeric(data['Reviews'])
 
 # this function is to filter out rows that do not have size or ratings.
 def is_number(i):
@@ -60,7 +61,7 @@ size_data = data.loc[ [is_number(c) for c in data.Size], ]
 size_list = list(size_data.Size)
 #plot1 = sns.distplot(size_list, hist=False)
 plot1 = sns.kdeplot(size_list, shade=True)
-plot1.set_title('Distribution of App Size')
+plot1.set_title('Distribution of App Size', size=15)
 plot1.set_xlabel('Size (MB)')
 plot1.set_ylabel('Density')
 plot1.set_xlim(0,100)
@@ -107,7 +108,7 @@ plot2.legend((line1, line2, line3),
 round(sum(rating_list > 3.0)/ len(rating_list) * 100.0, 2)
 # Comment: among all valid ratings, less than 4% rated below or equal 3.0.
 # Majority of the ratings are between 4.0 and 5.0, meaning people generally give high ratings to apps.
-
+len(size_data.groupby(by=['Category']))
 size_data['Size'] = pd.to_numeric(size_data['Size'])
 size_data_by_category = size_data.groupby(by=['Category'])['Size'].median().sort_values(ascending=False)
 keep = list(size_data_by_category[:5].index) + list(size_data_by_category[-5:].index)
@@ -115,13 +116,13 @@ idx_to_keep = [i in keep for i in size_data['Category']]
 size_data_top5_bottom5 = size_data.loc[idx_to_keep, ]
 
 def get_top5_bottom5(data, by_category):
-group = []
-for i in data.Category:
-if i in list(by_category[:5].index):
-group.append('Top 5 in Size')
-else:
-group.append('Bottom 5 in Size')
-return group
+    group = []
+    for i in data.Category:
+        if i in list(by_category[:5].index):
+            group.append('Top 5 in Size')
+        else:
+            group.append('Bottom 5 in Size')
+    return group
 
 group = get_top5_bottom5(size_data_top5_bottom5,size_data_by_category)
 size_data_top5_bottom5['Rank'] = group
@@ -154,12 +155,7 @@ plot4.set_xlim(1, 5)
 # Rating do not seem to differ much in categories, but we definitely see a difference when we compare the top rating
 # app category (Health & Fitness) and the worst rating category (Dating), with the median difference of 0.4
 
-category_count = data.Category.value_counts().sort_values(ascending=False)
-plot5 = sns.barplot(y=category_count.index,x=category_count, orient='h')
-plot5.set_yticklabels(plot5.get_yticklabels(),rotation=20, fontsize=8, ha='right')
-plot5.set_title('Number of Apps by Category',size=15)
-plot5.set_xlabel('Number of Apps')
-plot5.set_ylabel('Category')
+
 
 type_count = data.Type.value_counts()
 free, paid = rating_data.groupby(by=['Type'])['Rating'].mean()
@@ -171,18 +167,18 @@ plt.text(x=.8,y=-1,s='Paid: '+str(np.round(paid, 2)))
 
 # Almost 93% of the apps in the android market are free, and the average rating between the two are similar.
 
-rating_order_by_type = rating_data.groupby(by=['Type'])['Rating'].median().sort_values(ascending=False).index
-plot6 = sns.boxplot(x = 'Type', y = 'Rating', data=rating_data, order=rating_order_by_type)
-plot6.set_xticklabels(plot6.get_xticklabels(),rotation=45, fontsize=8, ha='right')
-plot6.set_title('App Size by Type',size=15)
-plot6.set_xlabel('Type')
-plot6.set_ylabel('Rating')
+category_count = data.Category.value_counts().sort_values(ascending=False)
+plot5 = sns.barplot(y=category_count.index,x=category_count, orient='h')
+plot5.set_yticklabels(plot5.get_yticklabels(),rotation=20, fontsize=8, ha='right')
+plot5.set_title('Number of Apps by Category',size=15)
+plot5.set_xlabel('Number of Apps')
+plot5.set_ylabel('Category')
 
 install_by_category = data.groupby(by='Category')['Installs'].sum().sort_values(ascending=False)
 install_by_category = install_by_category/1000000000 # in billion
 plot7 = sns.barplot(y=install_by_category.index,x=install_by_category, orient='h')
 plot7.set_yticklabels(plot7.get_yticklabels(),rotation=20, fontsize=8, ha='right')
-plot7.set_title('Number of Installs by Category',size=15)
+plot7.set_title('Number of Installs by Category', size=15)
 plot7.set_xlabel('Installs (in Billion)')
 plot7.set_ylabel('Category')
 
@@ -212,7 +208,7 @@ plot8.text(y=len(game_type)-1+0.2, x=game_type[len(game_type)-1], s=str(round(ga
 install_by_game_genres = gaming_app.groupby(by='Genres')['Installs'].sum().sort_values(ascending=False)
 install_by_game_genres = install_by_game_genres/1000000000 # in billion
 install_by_game_genres_pct = install_by_game_genres/sum(install_by_game_genres )
-str(round(install_by_game_genres_pct[0]*100.0))+'%'
+
 
 plot9 = sns.barplot(y=install_by_game_genres.index,x=install_by_game_genres, orient='h')
 plot9.set_yticklabels(plot9.get_yticklabels(), rotation=20, fontsize=8, ha='right')
@@ -234,12 +230,12 @@ s=str(round(install_by_game_genres[len(install_by_game_genres)-1],1))+', '+ str(
 # What ratings should I be aiming for if I am developing games?
 
 rating_by_game_genres = gaming_app.groupby(by=['Genres'])['Rating'].median().sort_values(ascending=False).index
-plot10 = sns.boxplot(x = 'Genres', y = 'Rating', data=gaming_app, order=rating_by_game_genres)
-plot10.set_xticklabels(plot10.get_xticklabels(),rotation=45, fontsize=8, ha='right')
+plot10 = sns.boxplot(y = 'Genres', x = 'Rating', data=gaming_app, order=rating_by_game_genres)
+plot10.set_yticklabels(plot10.get_yticklabels(),rotation=20, fontsize=8, ha='right')
 plot10.set_title('Game Rating by Genre',size=15)
-plot10.set_xlabel('Genres')
-plot10.set_ylabel('Rating')
-plot10.set_ylim(3.25,)
+plot10.set_xlabel('Rating')
+plot10.set_ylabel('Genres')
+plot10.set_xlim(3.25,)
 
 # According to this boxplot, most of the game genre has a median of 4.25. Depending on which genre the company choose,
 # a more concise boxplot is available for each genre. For example for 'Casual' Games, we should be expecting a rating of 4.4 (lower quartile)
@@ -254,10 +250,10 @@ plot10.set_ylim(3.25,)
 # Lets begin with checking the number of reviews by category
 
 reviews_by_category = data.groupby(by='Category')['Reviews'].sum().sort_values(ascending=False)
-reviews_by_category = reviews_by_category/1000000 # in million
+reviews_by_category = reviews_by_category/1000000.0 # in million
 
-plot11 = sns.barplot(y=reviews_by_category.index,x=reviews_by_category)
-plot11.set_yticklabels(plot11.get_yticklabels(),rotation=20, fontsize=8, ha='right')
+plot11 = sns.barplot(y=reviews_by_category.index,x=reviews_by_category, orient='h')
+plot11.set_yticklabels(plot11.get_yticklabels(),rotation=20, fontsize=7.5, ha='right')
 plot11.set_title('Number of Reviews by Category',size=15)
 plot11.set_xlabel('Reviews (in Million)')
 plot11.set_ylabel('Category')
@@ -270,7 +266,6 @@ s=str(round(reviews_by_category[len(reviews_by_category)-1],1)), size=8)
 # The story would be clearer if we divide them by the number of installs according to their category. This way we are able to understand
 # how likely a user writes a review in a given category.
 
-data.Reviews = pd.to_numeric(data.Reviews)
 data_by_category = data.groupby(by='Category')
 likelihood_to_review = (data_by_category.Reviews.sum()/data.groupby(by='Category')['Installs'].sum().sort_index()).sort_values(ascending=False)*100
 
@@ -279,9 +274,9 @@ plot11.set_yticklabels(plot11.get_yticklabels(), rotation=20, fontsize=8, ha='ri
 plot11.set_title('Likelihood to Write Reviews', size=15)
 plot11.set_xlabel('Percentage')
 plot11.set_ylabel('Category')
-plot11.text(y=0+0.2, x=likelihood_to_review[0], s=str(round(likelihood_to_review[0],1))+'%', size = 8)
-plot11.text(y=len(likelihood_to_review)-1+0.2, x=likelihood_to_review[len(likelihood_to_review)-1],
-s=str(round(likelihood_to_review[len(likelihood_to_review)-1],1))+'%', size = 8)
+plot11.text(y=0+0.4, x=likelihood_to_review[0], s=str(round(likelihood_to_review[0],1))+'%', size = 9)
+plot11.text(y=len(likelihood_to_review)-1+0.4, x=likelihood_to_review[len(likelihood_to_review)-1],
+s=str(round(likelihood_to_review[len(likelihood_to_review)-1],1))+'%', size = 9)
 
 # This plot shows a surprising result. 'Comics' actually holds the top spot with 6%, meaning people who downloaded 'Comics'
 # tends to write more reviews compared to other app categories. Categories that has the least likelihold to have reviews
